@@ -1,0 +1,41 @@
+
+<style>
+    #datatable tbody{display:block; max-height:200px;overflow-y:scroll;}
+    #datatable tr{display:block;} 
+    #datatable th,#datatable td{width:250px;}
+
+</style>
+<div class="table-responsive">
+    <table class="table table-sm" id="datatable">
+        <thead class="thead-dark ">
+            <tr>
+                <th scope="col">Date</th>
+                {% for col in colnames %}
+                <th scope="cols">{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr 
+            {% if  record['out Status'] == 1 %}
+            class="table-warning"
+            {% elif record['out Status'] == 2 %}
+            class="table-danger"
+            {% endif %}
+
+            >
+                <th scope="row">{{indexset[loop.index-1]}}</th>
+                {% for col in colnames %}
+                <td>{{ record[col] }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div id='images' class='justify-content-center'>
+    {% if plot %}
+    <img class="img-fluid" src="data:image/png;base64,{{name}}" style="margin-left:2em">
+    {% endif %}
+</div>
