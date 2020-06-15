@@ -1,6 +1,8 @@
 from LocallyWeighted import LocallyWeightedRegression
 from EnsembleRegression import EnsembledRegression
 import base64
+import configparser
+import os
 # tb._SYMBOLIC_SCOPE.value = True
 import pandas as pd
 import numpy as np
@@ -8,9 +10,14 @@ import io
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
-import flask
+
 from flask import request, jsonify,render_template,Response
-app = flask.Flask(__name__,template_folder='/home/kishora/Documents/reservoirOutflow/templates',static_url_path='/home/kishora/Documents/reservoirOutflow/statics',static_folder='/home/kishora/Documents/reservoirOutflow/statics')
+import flask
+configure = configparser.ConfigParser()
+configure.read(os.path.join(os.getcwd(),'configure.ini'))
+print(configure['DEFAULT']['root'])
+projectRoot = configure['DEFAULT']['ROOT']
+app = flask.Flask(__name__,template_folder= os.path.join(projectRoot,'templates'),static_url_path=os.path.join(projectRoot,'statics'),static_folder=os.path.join(projectRoot,'statics'))
 app.config["DEBUG"] = True
 import matplotlib as mpl
 mpl.rcParams['figure.figsize'] = (30, 10)
@@ -55,7 +62,7 @@ def rawData():
     elif (month == '2'):
         begin, end = 1, 5
         figval = 1
-    inputFrame = pd.read_csv('./Datasets/nineYearHarangi.csv', header=0, parse_dates=True,
+    inputFrame = pd.read_csv(os.path.join(projectRoot,'Datasets/nineYearHarangi.csv'), header=0, parse_dates=True,
                              index_col=0)
     inputFrame=inputFrame.loc[(inputFrame.index.year >= ybegin)&(inputFrame.index.year <= yend)&(inputFrame.index.month >= begin)&(inputFrame.index.month <= end)]
     inputFrame.index = inputFrame.index.astype(str)
@@ -95,7 +102,7 @@ def create_viz_figure(year,month):
     elif (month == '2'):
         begin, end = 1, 5
         figval=1
-    inputFrame = pd.read_csv('./Datasets/nineYearHarangi.csv', header=0, parse_dates=True,
+    inputFrame = pd.read_csv(os.path.join(projectRoot,'Datasets/nineYearHarangi.csv'), header=0, parse_dates=True,
                              index_col=0)
     fig = Figure()
 
@@ -166,7 +173,7 @@ def create_figure(results, startDate, endDate=None):
     startDate=np.datetime64(startDate)
     fig = Figure()
     outputFrame=results
-    inputFrame = pd.read_csv('./Datasets/nineYearHarangi.csv', header=0, parse_dates=True,index_col=0)
+    inputFrame = pd.read_csv(os.path.join(projectRoot,'Datasets/nineYearHarangi.csv'), header=0, parse_dates=True,index_col=0)
     axis = fig.add_subplot(1, 2, 1)
     axis2 = fig.add_subplot(1, 2, 2)
     beginDate = np.datetime64(startDate)-9

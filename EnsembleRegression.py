@@ -8,9 +8,14 @@ warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 from LocallyWeighted import series_to_supervised
 from tensorflow.keras.models import load_model
-
+import configparser
+import os
 class EnsembledRegression:
     def __init__(self, startDate, endDate = None):
+        configure = configparser.ConfigParser()
+        configure.read(os.path.join(os.getcwd(),'configure.ini'))
+        print(configure['DEFAULT']['root'])
+        self.projectRoot = configure['DEFAULT']['ROOT']
         if endDate is None and isinstance(startDate, str):
             self.predictionDate = np.datetime64(startDate)
         elif isinstance(startDate, str) and isinstance(endDate, str):
@@ -23,15 +28,15 @@ class EnsembledRegression:
         else:
             self.startDate = np.datetime64(self.predictionDate[0].date())-9
             self.endDate = np.datetime64(self.predictionDate[self.predictionDate.shape[0]-1].date())-1
-        with open('./models/scaler.pckl', 'rb') as fin:
+        with open(os.path.join(self.projectRoot,'models/scaler.pckl'), 'rb') as fin:
             self.scaler = pickle.load(fin)
-        with open('./models/resLevel_forecast_model_lag2.pckl', 'rb') as fin:
+        with open(os.path.join(self.projectRoot,'models/resLevel_forecast_model_lag2.pckl'), 'rb') as fin:
             self.modelLevel = pickle.load(fin)
-        with open('./models/prsStorage_forecast_model_lag2.pckl', 'rb') as fin:
+        with open(os.path.join(self.projectRoot,'models/prsStorage_forecast_model_lag2.pckl'), 'rb') as fin:
             self.modelStorage = pickle.load(fin)
 
     def prepareSet(self, date):
-        inputFrame = pd.read_csv('./Datasets/nineYearHarangi.csv', header=0, parse_dates=True, index_col = 0)
+        inputFrame = pd.read_csv(os.path.join(self.projectRoot,'Datasets/nineYearHarangi.csv'), header=0, parse_dates=True, index_col = 0)
         unScaledinputSet = inputFrame.loc[self.startDate:self.endDate].copy()
         unScaledinputSet.drop(["Present Storage(TMC)", 'Reservoir Level(TMC)', 'Outflow'], axis=1, inplace=True)
         scaled=self.scaler.transform(unScaledinputSet.values)
@@ -39,7 +44,7 @@ class EnsembledRegression:
         return series_to_supervised(np.vstack((scaledInput.values,np.zeros(4))),9,0)
 
     def getLevelAndStorage(self, date, second):
-        inputFrame = pd.read_csv('./Datasets/nineYearHarangi.csv', header=0, parse_dates=True,
+        inputFrame = pd.read_csv(os.path.join(self.projectRoot,'Datasets/nineYearHarangi.csv'), header=0, parse_dates=True,
                                  index_col=0)
 
         if isinstance(date, np.datetime64):
@@ -90,7 +95,7 @@ class EnsembledRegression:
             return 0, 0, 0
 
     def outflow_provider(self, inflow, date, tmc=11574.874):
-        inputFrame = pd.read_csv('./Datasets/nineYearHarangi.csv', header=0, parse_dates=True,index_col=0)
+        inputFrame = pd.read_csv(os.path.join(self.projectRoot,'Datasets/nineYearHarangi.csv'), header=0, parse_dates=True,index_col=0)
 
         if isinstance(date, np.datetime64):
             startdate = np.datetime64(date) - 2
@@ -136,9 +141,9 @@ class EnsembledRegression:
         self.n_features = 4
         test_x = self.queryset.values
         lstm_test_X = test_x.reshape((test_x.shape[0], self.n_hours, self.n_features))
-        # with open('/home/kishora/Documents/models/lstmInf_forecast_model_lag9.pckl', 'rb') as fin:
+        # with open('/home/kishora/Documents/models/lstmInf_forecast_model_lag9.pckl'), 'rb') as fin:
         #     lstm_lag9_model = pickle.load(fin)
-        lstm_lag9_model = load_model('./models/lstmTensorInf_forecast_model_lag9.h5')
+        lstm_lag9_model = load_model(os.path.join(self.projectRoot,'models/lstmTensorInf_forecast_model_lag9.h5'))
         lstm_inv_yhat = lstm_lag9_model.predict(lstm_test_X)
         test_X = lstm_test_X.reshape((lstm_test_X.shape[0], self.n_hours * self.n_features))
         inv_yhatx = concatenate((lstm_inv_yhat, test_X[:, -3:]), axis=1)
@@ -151,7 +156,7 @@ class EnsembledRegression:
         varList.insert(0,'ds')
         fb_test['ds']=self.predictionDate
         fb_test_X = pd.DataFrame(fb_test[varList])
-        with open('./models/fbInf_forecast_model_lag9.pckl', 'rb') as fin:
+        with open(os.path.join(self.projectRoot,'models/fbInf_forecast_model_lag9.pckl'), 'rb') as fin:
             proph_lag9_model = pickle.load(fin)
         proph_inv_yhat = proph_lag9_model.predict(fb_test_X).values
         self.proph_res = proph_inv_yhat[:, -1]
@@ -159,7 +164,7 @@ class EnsembledRegression:
       # lwr prediction
         lwr_test=self.queryset.values
       # print(lwr_test.shape,queryset.values.shape)
-        with open('./models/lwrInf_forecast_model_lag9.pckl', 'rb') as fin:
+        with open(os.path.join(self.projectRoot,'models/lwrInf_forecast_model_lag9.pckl'), 'rb') as fin:
             lwr_lag9_model = pickle.load(fin)
         self.lwr_res = lwr_lag9_model.predict(lwr_test)
 
@@ -168,7 +173,7 @@ class EnsembledRegression:
         self.inp['lstm']=self.lstm_res
         self.inp['proph']=self.proph_res
         self.inp['lwr']=self.lwr_res
-        with open('./models/ensembled_forecast_model_lag9.pckl', 'rb') as fin:
+        with open(os.path.join(self.projectRoot,'models/ensembled_forecast_model_lag9.pckl'), 'rb') as fin:
             en_lag9_model = pickle.load(fin)
         self.predictions = pd.DataFrame()
         self.predictions['lower'] = en_lag9_model[0].predict(self.inp[['lstm', 'proph', 'lwr']])
