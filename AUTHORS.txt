@@ -1,5 +1,7 @@
 The following organizations or individuals have contributed to reservoir_project Team:
-  -Kishore S
-  -Ganesh Swaroop V
-  -Darshan C V
-  -Aman Raj Singh
+  -Kishore S @KishoreKalkur
+  -Ganesh Swaroop V @ganesh-8
+  -Darshan C V @darshancv
+  -Aman Raj Singh @aman12343
+  -Prasad B S 
+  -Nischal Harohalli Padmanabha @nischalhp
